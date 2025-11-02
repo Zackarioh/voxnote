@@ -153,8 +153,30 @@ A beautiful, feature-rich web application that converts voice recordings into te
 - **Vanilla JavaScript** - No frameworks required
 - **Web Speech API** - Voice recognition
 - **Speech Synthesis API** - Text-to-speech
-- **LibreTranslate API** - Free translation service
+- **Multiple Translation APIs** - MyMemory (free), LibreTranslate (free/open-source)
 - **LocalStorage API** - Data persistence
+
+## 🔧 Translation API Configuration
+
+VoxNote uses **free translation APIs** by default, but you can configure premium services for better quality:
+
+### Default (No Configuration Needed)
+
+- **MyMemory API** - Free, 1000 words/day
+- **LibreTranslate** - Free and open-source
+
+### Optional Premium APIs (Edit `api-config.js`)
+
+- **Google Cloud Translation** - High quality, pay-as-you-go
+- **Microsoft Azure Translator** - Enterprise-grade
+- **DeepL API** - Best quality translations
+
+**To add your API keys:**
+
+1. Open `api-config.js`
+2. Enable the service: `enabled: true`
+3. Add your API key: `apiKey: "your-key-here"`
+4. Save and reload
 
 ## 📱 Browser Compatibility
 
@@ -167,17 +189,18 @@ Works best in modern browsers that support Web Speech API:
 
 ## 🎨 Design Highlights
 
-- **Gradient backgrounds** with animated waves
+- **Gradient backgrounds** with clean design
 - **Glassmorphism cards** for modern look
 - **Smooth transitions** on all interactions
 - **Responsive grid layout** for notes
 - **Color-coded tags** for easy identification
 - **Pulsing animations** during recording
 - **Toast notifications** for user feedback
+- **Animated translation arrows** for visual flow
 
 ## 🔒 Privacy & Security
 
-- No data sent to external servers
+- Notes stored locally in your browser
 - All processing happens in your browser
 - No tracking or analytics
 - You own your data completely

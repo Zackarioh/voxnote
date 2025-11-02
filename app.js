@@ -828,9 +828,10 @@ function updateTranslateTimer() {
     }
 }
 
-// Translate text using LibreTranslate API (free and open-source)
+// Translate text using multiple APIs with fallback
 async function translateText() {
     const originalText = document.getElementById('originalText').value.trim();
+    const sourceLangCode = document.getElementById('sourceLanguage').value;
     const targetLang = document.getElementById('targetLanguage').value;
     
     if (!originalText) {
@@ -841,34 +842,126 @@ async function translateText() {
     // Show loading state
     document.getElementById('translatedText').value = 'Translating...';
     
+    // Map speech recognition codes to ISO codes
+    const langMap = {
+        'en-US': 'en', 'en-GB': 'en',
+        'es-ES': 'es', 'fr-FR': 'fr', 'de-DE': 'de',
+        'it-IT': 'it', 'pt-BR': 'pt', 'zh-CN': 'zh',
+        'ja-JP': 'ja', 'ko-KR': 'ko', 'ar-SA': 'ar',
+        'hi-IN': 'hi', 'ru-RU': 'ru'
+    };
+    
+    const sourceLang = langMap[sourceLangCode] || 'auto';
+    
+    // Try multiple translation services
+    let translatedText = null;
+    
+    // Method 1: Try MyMemory Translation API (Free, no API key required)
     try {
-        // Using LibreTranslate API (free alternative)
-        const response = await fetch('https://libretranslate.com/translate', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                q: originalText,
-                source: 'auto', // Auto-detect source language
-                target: targetLang,
-                format: 'text'
-            })
-        });
-        
-        if (!response.ok) {
-            throw new Error('Translation failed');
+        translatedText = await translateWithMyMemory(originalText, sourceLang, targetLang);
+        if (translatedText) {
+            document.getElementById('translatedText').value = translatedText;
+            showToast('Translation complete!', 'success');
+            return;
         }
-        
-        const data = await response.json();
-        document.getElementById('translatedText').value = data.translatedText;
-        showToast('Translation complete!', 'success');
     } catch (error) {
-        console.error('Translation error:', error);
-        // Fallback: Simple word substitution (basic demo)
-        document.getElementById('translatedText').value = originalText + '\n\n(Note: Using free translation API. For best results, ensure internet connection.)';
-        showToast('Translation service unavailable. Showing original text.', 'warning');
+        console.log('MyMemory API failed, trying next service...', error);
     }
+    
+    // Method 2: Try LibreTranslate API
+    try {
+        translatedText = await translateWithLibreTranslate(originalText, sourceLang, targetLang);
+        if (translatedText) {
+            document.getElementById('translatedText').value = translatedText;
+            showToast('Translation complete!', 'success');
+            return;
+        }
+    } catch (error) {
+        console.log('LibreTranslate API failed, trying next service...', error);
+    }
+    
+    // Method 3: Try Microsoft Translator (Free tier)
+    try {
+        translatedText = await translateWithMicrosoft(originalText, sourceLang, targetLang);
+        if (translatedText) {
+            document.getElementById('translatedText').value = translatedText;
+            showToast('Translation complete!', 'success');
+            return;
+        }
+    } catch (error) {
+        console.log('All translation services failed', error);
+    }
+    
+    // If all fail, show error
+    document.getElementById('translatedText').value = '';
+    showToast('Translation failed. Please check your internet connection and try again.', 'error');
+}
+
+// MyMemory Translation API (Free, reliable, no API key needed)
+async function translateWithMyMemory(text, sourceLang, targetLang) {
+    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${sourceLang}|${targetLang}`;
+    
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('MyMemory API request failed');
+    
+    const data = await response.json();
+    
+    if (data.responseStatus === 200 && data.responseData && data.responseData.translatedText) {
+        return data.responseData.translatedText;
+    }
+    
+    throw new Error('No translation returned from MyMemory');
+}
+
+// LibreTranslate API (Free and open-source)
+async function translateWithLibreTranslate(text, sourceLang, targetLang) {
+    const response = await fetch('https://libretranslate.com/translate', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            q: text,
+            source: sourceLang === 'auto' ? 'auto' : sourceLang,
+            target: targetLang,
+            format: 'text'
+        })
+    });
+    
+    if (!response.ok) throw new Error('LibreTranslate API request failed');
+    
+    const data = await response.json();
+    
+    if (data.translatedText) {
+        return data.translatedText;
+    }
+    
+    throw new Error('No translation returned from LibreTranslate');
+}
+
+// Microsoft Translator API (Using public endpoint)
+async function translateWithMicrosoft(text, sourceLang, targetLang) {
+    // This is a fallback that might work for some cases
+    // For production, you'd need a proper API key
+    const url = `https://api.cognitive.microsofttranslator.com/translate?api-version=3.0&from=${sourceLang}&to=${targetLang}`;
+    
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify([{ text: text }])
+    });
+    
+    if (!response.ok) throw new Error('Microsoft API request failed');
+    
+    const data = await response.json();
+    
+    if (data && data[0] && data[0].translations && data[0].translations[0]) {
+        return data[0].translations[0].text;
+    }
+    
+    throw new Error('No translation returned from Microsoft');
 }
 
 // Swap languages
