@@ -11,10 +11,15 @@ document.getElementById('userName').textContent = currentUser.name;
 
 // Initialize variables
 let recognition;
+let translateRecognition;
 let isRecording = false;
+let isTranslateRecording = false;
 let recordingStartTime;
+let translateStartTime;
 let timerInterval;
+let translateTimerInterval;
 let currentEditingNoteId = null;
+let currentMode = 'note'; // 'note' or 'translate'
 
 // Initialize Speech Recognition
 let finalTranscript = '';
@@ -650,6 +655,384 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+// ==================== TRANSLATION MODE ====================
+
+// Mode switching
+function switchMode(mode) {
+    currentMode = mode;
+    const notePanel = document.getElementById('notePanel');
+    const translatePanel = document.getElementById('translatePanel');
+    const modeButtons = document.querySelectorAll('.mode-btn');
+    
+    modeButtons.forEach(btn => btn.classList.remove('active'));
+    document.querySelector(`[data-mode="${mode}"]`).classList.add('active');
+    
+    if (mode === 'note') {
+        notePanel.style.display = 'block';
+        translatePanel.style.display = 'none';
+        if (isTranslateRecording) stopTranslateRecording();
+    } else {
+        notePanel.style.display = 'none';
+        translatePanel.style.display = 'block';
+        if (isRecording) stopRecording();
+        initializeTranslateRecognition();
+    }
+}
+
+// Initialize translation speech recognition
+function initializeTranslateRecognition() {
+    if (!translateRecognition && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        translateRecognition = new SpeechRecognition();
+        
+        translateRecognition.continuous = true;
+        translateRecognition.interimResults = true;
+        translateRecognition.lang = document.getElementById('sourceLanguage').value;
+        
+        let translateFinalTranscript = '';
+        let translateInterimTranscript = '';
+        
+        translateRecognition.onstart = function() {
+            isTranslateRecording = true;
+            updateTranslateRecordingUI(true);
+            startTranslateTimer();
+            translateFinalTranscript = '';
+            translateInterimTranscript = '';
+        };
+        
+        translateRecognition.onresult = function(event) {
+            translateInterimTranscript = '';
+            
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                const transcript = event.results[i][0].transcript;
+                
+                if (event.results[i].isFinal) {
+                    translateFinalTranscript += transcript + ' ';
+                } else {
+                    translateInterimTranscript += transcript;
+                }
+            }
+            
+            document.getElementById('originalText').value = translateFinalTranscript + translateInterimTranscript;
+            
+            // Auto-translate as you speak (debounced)
+            clearTimeout(window.translateTimeout);
+            window.translateTimeout = setTimeout(() => {
+                if (translateFinalTranscript.trim()) {
+                    translateText();
+                }
+            }, 1000);
+        };
+        
+        translateRecognition.onerror = function(event) {
+            console.error('Translation recognition error:', event.error);
+            showToast('Error: ' + event.error, 'error');
+            stopTranslateRecording();
+        };
+        
+        translateRecognition.onend = function() {
+            if (isTranslateRecording) {
+                translateRecognition.start();
+            }
+        };
+    }
+}
+
+// Translation recording button handler
+if (document.getElementById('translateRecordBtn')) {
+    document.getElementById('translateRecordBtn').addEventListener('click', function() {
+        if (!translateRecognition) {
+            initializeTranslateRecognition();
+        }
+        
+        if (!translateRecognition) {
+            showToast('Speech recognition not supported in this browser', 'error');
+            return;
+        }
+        
+        if (isTranslateRecording) {
+            stopTranslateRecording();
+        } else {
+            startTranslateRecording();
+        }
+    });
+}
+
+function startTranslateRecording() {
+    try {
+        translateRecognition.lang = document.getElementById('sourceLanguage').value;
+        translateRecognition.start();
+        showToast('Recording started...', 'success');
+    } catch (error) {
+        console.error('Error starting translation recognition:', error);
+        showToast('Failed to start recording', 'error');
+    }
+}
+
+function stopTranslateRecording() {
+    if (translateRecognition) {
+        translateRecognition.stop();
+    }
+    isTranslateRecording = false;
+    updateTranslateRecordingUI(false);
+    stopTranslateTimer();
+    showToast('Recording stopped', 'info');
+}
+
+function updateTranslateRecordingUI(recording) {
+    const recordBtn = document.getElementById('translateRecordBtn');
+    const micVisual = document.getElementById('translateMicVisual');
+    const status = document.getElementById('translateStatus');
+    const timer = document.getElementById('translateTimer');
+    
+    if (recordBtn && micVisual && status && timer) {
+        if (recording) {
+            recordBtn.classList.add('recording');
+            micVisual.classList.add('active');
+            status.textContent = 'Listening...';
+            timer.style.display = 'flex';
+        } else {
+            recordBtn.classList.remove('recording');
+            micVisual.classList.remove('active');
+            status.textContent = 'Click the microphone to start speaking';
+            timer.style.display = 'none';
+        }
+    }
+}
+
+function startTranslateTimer() {
+    translateStartTime = Date.now();
+    translateTimerInterval = setInterval(updateTranslateTimer, 1000);
+}
+
+function stopTranslateTimer() {
+    if (translateTimerInterval) {
+        clearInterval(translateTimerInterval);
+        translateTimerInterval = null;
+    }
+    const timerDisplay = document.getElementById('translateTimerDisplay');
+    if (timerDisplay) {
+        timerDisplay.textContent = '00:00';
+    }
+}
+
+function updateTranslateTimer() {
+    const elapsed = Math.floor((Date.now() - translateStartTime) / 1000);
+    const minutes = Math.floor(elapsed / 60).toString().padStart(2, '0');
+    const seconds = (elapsed % 60).toString().padStart(2, '0');
+    const timerDisplay = document.getElementById('translateTimerDisplay');
+    if (timerDisplay) {
+        timerDisplay.textContent = `${minutes}:${seconds}`;
+    }
+}
+
+// Translate text using LibreTranslate API (free and open-source)
+async function translateText() {
+    const originalText = document.getElementById('originalText').value.trim();
+    const targetLang = document.getElementById('targetLanguage').value;
+    
+    if (!originalText) {
+        showToast('Please speak or enter text to translate', 'warning');
+        return;
+    }
+    
+    // Show loading state
+    document.getElementById('translatedText').value = 'Translating...';
+    
+    try {
+        // Using LibreTranslate API (free alternative)
+        const response = await fetch('https://libretranslate.com/translate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                q: originalText,
+                source: 'auto', // Auto-detect source language
+                target: targetLang,
+                format: 'text'
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Translation failed');
+        }
+        
+        const data = await response.json();
+        document.getElementById('translatedText').value = data.translatedText;
+        showToast('Translation complete!', 'success');
+    } catch (error) {
+        console.error('Translation error:', error);
+        // Fallback: Simple word substitution (basic demo)
+        document.getElementById('translatedText').value = originalText + '\n\n(Note: Using free translation API. For best results, ensure internet connection.)';
+        showToast('Translation service unavailable. Showing original text.', 'warning');
+    }
+}
+
+// Swap languages
+function swapLanguages() {
+    const sourceSelect = document.getElementById('sourceLanguage');
+    const targetSelect = document.getElementById('targetLanguage');
+    
+    // Map speech recognition codes to translation codes
+    const langMap = {
+        'en-US': 'en', 'en-GB': 'en',
+        'es-ES': 'es', 'fr-FR': 'fr', 'de-DE': 'de',
+        'it-IT': 'it', 'pt-BR': 'pt', 'zh-CN': 'zh',
+        'ja-JP': 'ja', 'ko-KR': 'ko', 'ar-SA': 'ar',
+        'hi-IN': 'hi', 'ru-RU': 'ru'
+    };
+    
+    const reverseLangMap = {
+        'en': 'en-US', 'es': 'es-ES', 'fr': 'fr-FR', 'de': 'de-DE',
+        'it': 'it-IT', 'pt': 'pt-BR', 'zh': 'zh-CN',
+        'ja': 'ja-JP', 'ko': 'ko-KR', 'ar': 'ar-SA',
+        'hi': 'hi-IN', 'ru': 'ru-RU'
+    };
+    
+    const currentSource = sourceSelect.value;
+    const currentTarget = targetSelect.value;
+    
+    // Swap if possible
+    if (reverseLangMap[currentTarget]) {
+        sourceSelect.value = reverseLangMap[currentTarget];
+    }
+    if (langMap[currentSource]) {
+        targetSelect.value = langMap[currentSource];
+    }
+    
+    // Swap text
+    const originalText = document.getElementById('originalText').value;
+    const translatedText = document.getElementById('translatedText').value;
+    
+    document.getElementById('originalText').value = translatedText;
+    document.getElementById('translatedText').value = originalText;
+    
+    showToast('Languages swapped', 'info');
+}
+
+// Clear translation
+function clearTranslation() {
+    document.getElementById('originalText').value = '';
+    document.getElementById('translatedText').value = '';
+    
+    if (isTranslateRecording) {
+        stopTranslateRecording();
+    }
+    
+    showToast('Translation cleared', 'info');
+}
+
+// Copy original text
+function copyOriginalText() {
+    const text = document.getElementById('originalText').value;
+    if (text) {
+        navigator.clipboard.writeText(text).then(() => {
+            showToast('Original text copied!', 'success');
+        });
+    } else {
+        showToast('Nothing to copy', 'warning');
+    }
+}
+
+// Copy translated text
+function copyTranslatedText() {
+    const text = document.getElementById('translatedText').value;
+    if (text) {
+        navigator.clipboard.writeText(text).then(() => {
+            showToast('Translation copied!', 'success');
+        });
+    } else {
+        showToast('Nothing to copy', 'warning');
+    }
+}
+
+// Speak original text
+function speakOriginal() {
+    const text = document.getElementById('originalText').value;
+    const lang = document.getElementById('sourceLanguage').value;
+    
+    if (text && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = lang;
+        window.speechSynthesis.speak(utterance);
+        showToast('Playing original...', 'info');
+    } else {
+        showToast('Nothing to play', 'warning');
+    }
+}
+
+// Speak translated text
+function speakTranslated() {
+    const text = document.getElementById('translatedText').value;
+    const targetLang = document.getElementById('targetLanguage').value;
+    
+    // Map target codes to speech codes
+    const speechLangMap = {
+        'en': 'en-US', 'es': 'es-ES', 'fr': 'fr-FR', 'de': 'de-DE',
+        'it': 'it-IT', 'pt': 'pt-BR', 'zh': 'zh-CN',
+        'ja': 'ja-JP', 'ko': 'ko-KR', 'ar': 'ar-SA',
+        'hi': 'hi-IN', 'ru': 'ru-RU', 'nl': 'nl-NL',
+        'pl': 'pl-PL', 'tr': 'tr-TR'
+    };
+    
+    if (text && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = speechLangMap[targetLang] || targetLang;
+        window.speechSynthesis.speak(utterance);
+        showToast('Playing translation...', 'info');
+    } else {
+        showToast('Nothing to play', 'warning');
+    }
+}
+
+// Save translation as note
+function saveTranslation() {
+    const originalText = document.getElementById('originalText').value.trim();
+    const translatedText = document.getElementById('translatedText').value.trim();
+    
+    if (!originalText || !translatedText) {
+        showToast('Please translate text first', 'warning');
+        return;
+    }
+    
+    const sourceLang = document.getElementById('sourceLanguage').options[document.getElementById('sourceLanguage').selectedIndex].text;
+    const targetLang = document.getElementById('targetLanguage').options[document.getElementById('targetLanguage').selectedIndex].text;
+    
+    const content = `Original (${sourceLang}):\n${originalText}\n\nTranslation (${targetLang}):\n${translatedText}`;
+    
+    const note = {
+        id: Date.now().toString(),
+        userId: currentUser.id,
+        title: `Translation: ${sourceLang} → ${targetLang}`,
+        content: content,
+        tags: ['translation', sourceLang.toLowerCase(), targetLang.toLowerCase()],
+        favorite: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+    };
+    
+    saveNoteToStorage(note);
+    showToast('Translation saved as note!', 'success');
+    updateStats();
+    updateTagsList();
+}
+
+// Source language change handler
+if (document.getElementById('sourceLanguage')) {
+    document.getElementById('sourceLanguage').addEventListener('change', function() {
+        if (translateRecognition) {
+            translateRecognition.lang = this.value;
+            if (isTranslateRecording) {
+                stopTranslateRecording();
+                showToast('Recording stopped. Language changed.', 'info');
+            }
+        }
+    });
 }
 
 // Initialize app

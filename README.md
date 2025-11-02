@@ -1,6 +1,6 @@
-# 🎙️ VoxNote - Voice to Text Application
+# 🎙️ VoxNote - Voice to Text & Translation Application
 
-A beautiful, feature-rich web application that converts voice recordings into text with modern UI/UX design.
+A beautiful, feature-rich web application that converts voice recordings into text with real-time translation capabilities and modern UI/UX design.
 
 ## ✨ Features
 
@@ -17,6 +17,16 @@ A beautiful, feature-rich web application that converts voice recordings into te
 - **Live Timer** - Visual recording timer with animated indicators
 - **Visual Feedback** - Pulsing microphone animation while recording
 - **Continuous Recording** - Records until you stop, with automatic restart
+
+### 🌐 Voice Translation (NEW!)
+
+- **Speak & Translate** - Record in one language and translate to another in real-time
+- **15+ Languages** - Translate between English, Spanish, French, German, Italian, Portuguese, Chinese, Japanese, Korean, Arabic, Hindi, Russian, Dutch, Polish, Turkish, and more
+- **Auto-Translation** - Automatic translation as you speak
+- **Language Swap** - Quickly swap source and target languages
+- **Text-to-Speech** - Hear both original and translated text
+- **Save Translations** - Save translation pairs as notes for future reference
+- **Copy Both Sides** - Easily copy original or translated text
 
 ### 📝 Note Management
 
@@ -40,6 +50,7 @@ A beautiful, feature-rich web application that converts voice recordings into te
 - **Dark Mode** - Toggle between light and dark themes
 - **Responsive Design** - Works perfectly on desktop, tablet, and mobile
 - **Visual Feedback** - Toast notifications for all actions
+- **Dual Mode Interface** - Switch between Voice Notes and Voice Translator modes
 
 ### 📊 Statistics Dashboard
 
@@ -71,11 +82,27 @@ A beautiful, feature-rich web application that converts voice recordings into te
 
 ### Recording Your First Note
 
-1. Click the **microphone button** to start recording
-2. Speak clearly - your speech will be transcribed in real-time
-3. Click again to **stop recording**
-4. Add a **title** and **tags** (optional)
-5. Click **Save Note**
+1. Make sure you're on the **"Voice Notes"** tab
+2. Click the **microphone button** to start recording
+3. Speak clearly - your speech will be transcribed in real-time
+4. Click again to **stop recording**
+5. Add a **title** and **tags** (optional)
+6. Click **Save Note**
+
+### Using the Voice Translator (NEW!)
+
+1. Click the **"Voice Translator"** tab at the top
+2. Select your **source language** (the language you'll speak)
+3. Select your **target language** (the language to translate to)
+4. Click the **microphone button** and start speaking
+5. Your speech appears in the "Original Text" box
+6. Translation appears automatically in the "Translated Text" box
+7. Use action buttons to:
+   - 🔊 **Play** - Hear the original or translated text
+   - 📋 **Copy** - Copy text to clipboard
+   - 🔄 **Swap** - Switch source and target languages
+   - 💾 **Save Translation** - Save as a note with both texts
+   - 🗑️ **Clear** - Start over
 
 ### Managing Notes
 
@@ -100,17 +127,23 @@ A beautiful, feature-rich web application that converts voice recordings into te
 - French
 - German
 - Italian
-- Portuguese
+- Portuguese (Brazilian)
 - Chinese (Mandarin)
 - Japanese
 - Korean
+- Arabic
+- Hindi
+- Russian
+- Dutch
+- Polish
+- Turkish
 - And more!
 
 ## 💾 Data Storage
 
 - All data is stored locally in your browser's localStorage
-- No server required - 100% client-side application
-- Your notes are private and secure
+- No server required - 100% client-side application (except translation API)
+- Your notes and translations are private and secure
 - Data persists between sessions
 
 ## 🎯 Key Technologies
@@ -120,6 +153,7 @@ A beautiful, feature-rich web application that converts voice recordings into te
 - **Vanilla JavaScript** - No frameworks required
 - **Web Speech API** - Voice recognition
 - **Speech Synthesis API** - Text-to-speech
+- **LibreTranslate API** - Free translation service
 - **LocalStorage API** - Data persistence
 
 ## 📱 Browser Compatibility

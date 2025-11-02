@@ -562,12 +562,226 @@ body.dark-mode {
     gap: 24px;
 }
 
+/* Mode Toggle */
+.mode-toggle {
+    display: flex;
+    gap: 12px;
+    background: var(--bg-primary);
+    padding: 8px;
+    border-radius: 16px;
+    box-shadow: 0 2px 8px var(--shadow);
+}
+
+.mode-btn {
+    flex: 1;
+    padding: 14px 20px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.mode-btn:hover {
+    background: var(--bg-tertiary);
+    color: var(--primary);
+}
+
+.mode-btn.active {
+    background: var(--gradient-1);
+    color: white;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.mode-btn i {
+    font-size: 18px;
+}
+
 /* Recording Panel */
 .recording-panel {
     background: var(--bg-primary);
     border-radius: 20px;
     padding: 30px;
     box-shadow: 0 4px 16px var(--shadow);
+}
+
+/* Translation Panel */
+.translation-panel {
+    background: var(--bg-primary);
+    border-radius: 20px;
+    padding: 30px;
+    box-shadow: 0 4px 16px var(--shadow);
+}
+
+.translation-header {
+    margin-bottom: 24px;
+}
+
+.translation-header h2 {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--text-primary);
+    margin-bottom: 20px;
+}
+
+.translation-header i {
+    color: var(--primary);
+}
+
+.translation-settings {
+    display: flex;
+    align-items: flex-end;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.language-selector {
+    flex: 1;
+    min-width: 200px;
+}
+
+.language-selector label {
+    display: block;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.language-selector label i {
+    margin-right: 6px;
+    color: var(--primary);
+}
+
+.language-selector select {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.language-selector select:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.swap-btn {
+    padding: 12px 16px;
+    background: var(--bg-tertiary);
+    border: none;
+    border-radius: 10px;
+    color: var(--primary);
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 18px;
+}
+
+.swap-btn:hover {
+    background: var(--primary);
+    color: white;
+    transform: rotate(180deg);
+}
+
+.translator-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    padding: 30px;
+    background: var(--bg-secondary);
+    border-radius: 16px;
+    margin: 24px 0;
+}
+
+.translation-boxes {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 20px;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.translation-box {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 20px;
+    border: 2px solid var(--border);
+}
+
+.box-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.box-header label {
+    font-weight: 700;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.box-header label i {
+    color: var(--primary);
+}
+
+.box-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.translation-box textarea {
+    width: 100%;
+    min-height: 150px;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 15px;
+    resize: vertical;
+    font-family: inherit;
+}
+
+.translation-box textarea:focus {
+    outline: none;
+}
+
+.translation-arrow {
+    font-size: 32px;
+    color: var(--primary);
+    animation: slideArrow 2s ease-in-out infinite;
+}
+
+@keyframes slideArrow {
+    0%, 100% {
+        transform: translateX(0);
+    }
+    50% {
+        transform: translateX(10px);
+    }
+}
+
+.translation-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
 }
 
 .recording-header {
@@ -1196,7 +1410,8 @@ body.dark-mode {
         max-width: 100%;
     }
     
-    .recording-panel {
+    .recording-panel,
+    .translation-panel {
         padding: 20px;
     }
     
@@ -1208,6 +1423,37 @@ body.dark-mode {
     
     .login-container {
         padding: 30px 20px;
+    }
+    
+    /* Translation responsive */
+    .translation-boxes {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    
+    .translation-arrow {
+        transform: rotate(90deg);
+        margin: 10px 0;
+    }
+    
+    .translation-settings {
+        flex-direction: column;
+    }
+    
+    .language-selector {
+        width: 100%;
+    }
+    
+    .swap-btn {
+        align-self: center;
+    }
+    
+    .translation-actions {
+        flex-direction: column;
+    }
+    
+    .translation-actions button {
+        width: 100%;
     }
 }
 
